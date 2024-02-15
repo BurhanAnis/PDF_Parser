@@ -1,6 +1,7 @@
 import streamlit as st
 import PyPDF2
 from io import BytesIO
+from collections import defaultdict
 
 # Function to extract text from a single PDF file
 def extract_text_from_pdf(file):
@@ -10,20 +11,22 @@ def extract_text_from_pdf(file):
         text += pdf_reader.pages[page_num].extract_text()
     return text
 
-# Function to search for terms in the extracted text
-def search_for_terms(text, key_terms):
-    found_terms = set()  # Using a set to avoid duplicate terms
+# Updated function to count occurrences of each term in the text
+def search_for_terms_and_count(text, key_terms):
+    term_counts = defaultdict(int)  # Default to 0 for each key term
+    lower_text = text.lower()
     for term in key_terms:
-        if term.lower() in text.lower():
-            found_terms.add(term)
-    return found_terms
+        count = lower_text.count(term.lower())
+        if count > 0:
+            term_counts[term] += count
+    return term_counts
 
-# Streamlit app to process multiple PDF uploads and search for key terms
+# Streamlit app to process multiple PDF uploads, search for key terms, and count occurrences
 def main():
     st.title("PDF Folder Key Terms Finder")
 
     # Instructions
-    st.write("Upload multiple PDF files to search for key terms. Use the file dialog to select multiple files or drag and drop them.")
+    st.write("Upload multiple PDF files to search for key terms and see how many times they appear. Use the file dialog to select multiple files or drag and drop them.")
 
     # Upload PDFs
     uploaded_files = st.file_uploader("Choose PDF files", type="pdf", accept_multiple_files=True)
@@ -40,16 +43,17 @@ def main():
                     # Read uploaded PDF file
                     bytes_data = uploaded_file.read()
                     text = extract_text_from_pdf(BytesIO(bytes_data))
-                    found_terms = search_for_terms(text, key_terms)
+                    term_counts = search_for_terms_and_count(text, key_terms)
                     
-                    # Add results
-                    if found_terms:
-                        results[uploaded_file.name] = found_terms
+                    # Add results if any term is found
+                    if term_counts:
+                        results[uploaded_file.name] = term_counts
 
-                # Once processing is done, display results
+                # Sort results by total count in descending order and display
                 if results:
-                    for filename, terms in results.items():
-                        st.success(f"{filename}: {', '.join(terms)}")
+                    for filename in sorted(results, key=lambda x: sum(results[x].values()), reverse=True):
+                        terms_counts_str = ', '.join([f"{term}: {count}" for term, count in results[filename].items()])
+                        st.success(f"{filename}: {terms_counts_str}")
                 else:
                     st.info("No key terms found in the uploaded files.")
         else:
