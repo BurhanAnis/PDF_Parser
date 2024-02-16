@@ -26,7 +26,7 @@ def search_for_terms_and_count(pages_text, key_terms):
 
 # Streamlit app to process multiple PDF uploads, search for key terms, count occurrences, and note page numbers
 def main():
-    st.title("PDF Searcher")
+    st.title("PDF Folder Key Terms Finder")
 
     st.write("Upload multiple PDF files to search for key terms, see how many times they appear, and identify the pages they are found on.")
 
@@ -34,9 +34,6 @@ def main():
 
     key_terms_input = st.text_input("Enter key terms separated by comma")
     key_terms = [term.strip() for term in key_terms_input.split(",") if term]
-
-    # Select box for choosing sort order
-    sort_order = st.selectbox("Sort results by", ["Highest to lowest", "Lowest to highest"])
 
     if st.button("Search"):
         if uploaded_files and key_terms:
@@ -52,10 +49,7 @@ def main():
 
                 if results:
                     for filename, details in results.items():
-                        # Sorting the term details based on the chosen order
-                        sorted_details = dict(sorted(details.items(), key=lambda item: item[1]['count'], reverse=sort_order == "Highest to lowest"))
-                        
-                        result_str = ', '.join([f"{term}: {detail['count']} times on pages {sorted(detail['pages'])}" for term, detail in sorted_details.items()])
+                        result_str = ', '.join([f"{term}: {detail['count']} times on pages {sorted(detail['pages'])}" for term, detail in details.items()])
                         st.success(f"{filename}: {result_str}")
                 else:
                     st.info("No key terms found in the uploaded files.")
@@ -64,4 +58,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
